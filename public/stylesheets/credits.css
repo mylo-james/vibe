@@ -1,0 +1,32 @@
+.credits-main {
+  max-width: 900px;
+  margin: 3rem auto 5rem;
+  padding: 0 1.5rem;
+}
+.credits-main > p {
+  color: var(--muted);
+}
+.credit-list {
+  list-style: none;
+  padding: 0;
+  margin: 2.5rem 0 4rem;
+}
+.credit-list li {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr auto;
+  gap: 1rem;
+  border-bottom: 1px solid var(--line);
+  padding: 1rem 0;
+}
+.credit-list span {
+  color: var(--muted);
+}
+.credit-list a {
+  font-size: 0.85rem;
+}
+@media (max-width: 600px) {
+  .credit-list li {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+}

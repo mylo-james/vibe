@@ -1,0 +1,26 @@
+extends components/head
+block content
+  header.site-header
+    +brand
+    a(href='/music') Back to music
+  main.credits-main#mainContent
+    h1 Made by people. Shared for listening.
+    h2 Independent music on Audius
+    p The Discover catalog streams directly from Audius. Each track shows its artist, original release link and uploader's license label under Credits. Audius music is not part of Vibe's CC0 collection.
+    p
+      a(href='https://audius.org/open-music-license.pdf' target='_blank' rel='noopener noreferrer') Audius Open Music License
+      | #{' · '}
+      a(href='https://audius.co/terms-of-use' target='_blank' rel='noopener noreferrer') Audius terms
+    h2 Vibe's local collection
+    p These ten recordings are offered under #[a(href='https://creativecommons.org/publicdomain/zero/1.0/' rel='noopener') CC0 1.0]. We credit the artists and link to their original uploads. Files were converted to MP3 for browser playback.
+    ul.credit-list
+      each track in catalog
+        li
+          strong= track.title
+          span= track.artist
+          a(href=track.sourceUrl target='_blank' rel='noopener') Source & license
+    h2 The original Vibe team
+    p This project began as a collaboration between Geoffrey Otieno (backend), Mylo James (UX/UI), and Emily Burnham (team lead). This edition keeps the Pug, Express, and plain JavaScript foundation.
+    .actions
+      a(href='https://github.com/mylo-james/vibe') Project source
+      a(href='/') Vibe home

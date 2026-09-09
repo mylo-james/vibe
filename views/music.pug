@@ -1,14 +1,77 @@
-extends ./components/head
-
+extends components/head
 block content
-  include components/loading
-  .main
-    include components/music/logo
-    include components/music/nav-bar
-    include components/music/sidebar
-    include components/music/main-content
-    include components/music/music-player
-  #contextMenu.hidden
-    div Add to Playlist
-    #contextPlaylists
-      .contextPlaylist No playlists found
+  .music-shell
+    header.music-header
+      +brand
+      form.search-form#search-form(role='search')
+        label.sr-only(for='searchInput') Search Discover or your Library
+        input#searchInput(type='search' name='search' placeholder='Find your next track' maxlength='100' autocomplete='off')
+        button.icon-button(type='submit' aria-label='Search')
+          +icon('search')
+      .account-menu
+        span#welcome
+        button.text-button#logoutButton(type='button') Log out
+    aside.sidebar
+      nav.primary-nav(aria-label='Music')
+        a(href='/music/discover' data-nav='discover') Discover
+        a(href='/music/library' data-nav='library') Library
+      .sidebar-heading
+        h2 Your playlists
+        button.icon-button#newPlaylistButton(type='button' aria-label='Create playlist')
+          +icon('plus')
+      nav.playlist-nav#sidebarPlaylists(aria-label='Your playlists')
+      a.credits-link(href='/credits' target='_blank' rel='noopener') Music credits
+    main.music-content#mainContent(tabindex='-1')
+      p Loading your music…
+    p.app-status#status(role='status' aria-live='polite' hidden)
+    section.player(aria-label='Music player')
+      audio#trackAudio(preload='metadata')
+      .now-playing
+        .now-art.player-record#trackArt(data-motion aria-hidden='true') V
+        .now-info
+          strong#trackTitle Choose a track
+          span#trackArtist Your next vibe is waiting
+          span#playerState(role='status' aria-live='polite') Ready when you are
+      .playback
+        .transport
+          button.icon-button#shuffleButton(type='button' aria-label='Shuffle' aria-pressed='false')
+            +icon('shuffle')
+          button.icon-button#prevButton(type='button' aria-label='Previous track' disabled)
+            +icon('previous')
+          button.icon-button.play-toggle#playButton(type='button' aria-label='Play' disabled)
+            +icon('play')
+          button.icon-button#nextButton(type='button' aria-label='Next track' disabled)
+            +icon('next')
+          button.icon-button#repeatButton(type='button' aria-label='Repeat off' aria-pressed='false')
+            +icon('repeat')
+        .progress-row
+          time#startTime 0:00
+          label.sr-only(for='progress-bar') Seek position
+          input#progress-bar(type='range' min='0' max='100' value='0' step='0.1' disabled)
+          time#endTime 0:00
+      .volume-control
+        +icon('volume')
+        label.sr-only(for='volume') Volume
+        input#volume(type='range' min='0' max='100' value='30')
+    dialog#playlistDialog(aria-labelledby="dialogTitle")
+      form#playlistForm
+        .dialog-heading
+          h2#dialogTitle Create playlist
+          button.icon-button#closeDialog(type='button' aria-label='Close')
+            +icon('close')
+        +field('playlistName', 'Playlist name', 'text', 'off')(maxlength='50')
+        p.notice#dialogError(role='alert' hidden)
+        button.button(type='submit') Save playlist
+    dialog#addSongDialog(aria-labelledby="addDialogTitle")
+      .dialog-heading
+        h2#addDialogTitle Add to playlist
+        button.icon-button#closeAddDialog(type='button' aria-label='Close')
+          +icon('close')
+      p#addSongTitle
+      .playlist-choices#playlistChoices
+    dialog#deleteDialog(aria-labelledby="deleteTitle")
+      h2#deleteTitle Delete this playlist?
+      p Your saved songs will stay in Library.
+      .actions
+        button.button.button-quiet#cancelDelete(type='button') Keep playlist
+        button.button#confirmDelete(type='button') Delete playlist

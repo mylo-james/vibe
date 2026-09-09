@@ -1,43 +1,83 @@
 {
-    "name": "vibe-music-app",
-    "version": "1.0.0",
-    "description": "",
-    "main": "app.js",
-    "scripts": {
-        "start": "per-env",
-        "start:development": "nodemon -r dotenv/config ./bin/www",
-        "start:production": "./bin/www",
-        "test": "echo \"Error: no test specified\" && exit 1"
-    },
-    "keywords": [],
-    "author": "",
-    "license": "ISC",
-    "dependencies": {
-        "bcryptjs": "^2.4.3",
-        "body-parser": "^1.19.0",
-        "cookie-parser": "^1.4.5",
-        "cors": "^2.8.5",
-        "csurf": "^1.11.0",
-        "express": "^4.17.1",
-        "express-bearer-token": "^2.4.0",
-        "express-validator": "^6.4.1",
-        "faker": "^4.1.0",
-        "jsonwebtoken": "^8.5.1",
-        "morgan": "^1.10.0",
-        "node-fetch": "^2.6.1",
-        "path": "^0.12.7",
-        "per-env": "^1.0.2",
-        "pg": "^8.2.1",
-        "pug": "^2.0.4",
-        "sequelize": "^5.21.9"
-    },
-    "devDependencies": {
-        "dotenv": "^8.6.0",
-        "dotenv-cli": "^3.1.0",
-        "nodemon": "^2.0.4",
-        "sequelize-cli": "^5.5.1"
-    },
-    "engines": {
-        "node": "13.7.0"
-    }
+  "name": "vibe-music-app",
+  "version": "1.0.0",
+  "description": "A Pug and Express music player with private playlists and a credited, openly licensed catalog.",
+  "main": "app.js",
+  "scripts": {
+    "start": "node -r dotenv/config bin/www",
+    "dev": "nodemon -r dotenv/config bin/www",
+    "db:migrate": "node -r dotenv/config node_modules/sequelize-cli/lib/sequelize db:migrate",
+    "db:seed": "node -r dotenv/config node_modules/sequelize-cli/lib/sequelize db:seed:all",
+    "test": "node -r dotenv/config --test --test-concurrency=1 --test-timeout=60000 tests/*.test.cjs",
+    "test:browser": "node scripts/prepare-test-db.cjs && playwright test",
+    "check": "node scripts/check-source.cjs",
+    "catalog:sync": "node scripts/import-catalog.cjs",
+    "format": "prettier --write \"{app,auth,utils}.js\" \"{config,services,routes,public/js,db/models,db/seeders,scripts,tests}/**/*.{js,cjs}\" \"public/stylesheets/*.css\" \"db/migrations/2026*.js\" \"*.{json,cjs}\"",
+    "test:coverage": "node scripts/test-coverage.cjs",
+    "coverage:report": "c8 report"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "3.0.3",
+    "cookie-parser": "1.4.7",
+    "dotenv": "17.4.2",
+    "express": "4.22.2",
+    "express-rate-limit": "8.7.0",
+    "express-validator": "7.3.2",
+    "helmet": "8.3.0",
+    "jsonwebtoken": "9.0.3",
+    "pg": "8.23.0",
+    "pug": "3.0.4",
+    "sequelize": "6.37.8"
+  },
+  "engines": {
+    "node": ">=24 <27"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.63.0",
+    "c8": "12.0.0",
+    "nodemon": "3.1.14",
+    "prettier": "3.9.6",
+    "sequelize-cli": "6.6.5"
+  },
+  "overrides": {
+    "qs": "6.16.0"
+  },
+  "c8": {
+    "all": true,
+    "include": [
+      "app.js",
+      "auth.js",
+      "utils.js",
+      "bin/www",
+      "config/**/*.js",
+      "routes/**/*.js",
+      "services/**/*.js",
+      "db/**/*.js",
+      "public/js/**/*.js",
+      "scripts/import-catalog.cjs"
+    ],
+    "exclude": [],
+    "extension": [
+      ".js",
+      ".cjs",
+      ""
+    ],
+    "temp-directory": "coverage/tmp",
+    "reporter": [
+      "text",
+      "html",
+      "json",
+      "json-summary",
+      "lcov"
+    ],
+    "check-coverage": true,
+    "statements": 81,
+    "branches": 81,
+    "functions": 81,
+    "lines": 81
+  }
 }

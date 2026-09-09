@@ -1,9 +1,23 @@
-extends ./components/head
-
+extends components/head
 block content
-
-  include ./components/overlay
-
-  include ./components/index/nav-bar
-
-  include ./components/index/hero
+  header.site-header
+    +brand
+    nav(aria-label='Account')
+      a(href='/login') Log in
+      a.button.button-quiet(href='/signup') Create account
+  main.landing-main#mainContent
+    .landing-copy
+      h1 What's your VIBE?
+      p.lead Music for your mood.
+      p Electronic drift, quiet focus, and a little arcade energy. Find a track. Make a playlist. Stay a while.
+      button.button#demoButton(type='button') Try the demo
+      p.demo-note Your own demo workspace. No sign-up needed.
+      p.notice#error(role='alert' hidden)
+    .record-art(aria-hidden='true')
+      .record-disk(data-motion)
+        .record-grooves
+        .record-label
+          span VIBE
+          span SIDE A
+      .record-needle
+  +footer

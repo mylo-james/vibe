@@ -1,19 +1,8 @@
-const express = require('express');
-const router = express.Router();
-const userRouter = require('./user')
-const playlistRouter = require('./playlist')
-const searchRouter = require('./search')
-const songRouter = require('./songs')
-const userAuthRouter = require('./userAuth')
-
-router.get('/', (req, res) => {
-    res.json({ message: 'test of home route' });
-});
-
-router.use('/users', userRouter);
-router.use('/playlists', playlistRouter);
-router.use('/search', searchRouter);
-router.use('/songs', songRouter);
-router.use('/', userAuthRouter);
-
+const router = require('express').Router();
+router.use('/', require('./userAuth'));
+router.use('/users', require('./user'));
+router.use('/playlists', require('./playlist'));
+router.use('/catalog', require('./catalog'));
+router.use('/songs', require('./songs'));
+router.use('/search', require('./search'));
 module.exports = router;

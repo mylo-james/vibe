@@ -1,23 +1,11 @@
-const { username, password, database, host } = require("./index").db;
-
+const { db } = require('./index');
+const common = { dialect: 'postgres', logging: false, seederStorage: 'sequelize', ...db };
 module.exports = {
-  development: {
-    username,
-    password,
-    database,
-    host,
-    dialect: "postgres",
-    seederStorage: "sequelize",
-  },
+  development: common,
+  test: common,
   production: {
-    dialect: "postgres",
-    dialectOptions: {
-      ssl: {
-        require: true,
-        rejectUnauthorized: false, // <<<<<<< YOU NEED THIS TO FIX UNHANDLED REJECTION
-      },
-    },
-    seederStorage: "sequelize",
-    use_env_variable: "DATABASE_URL",
+    ...common,
+    use_env_variable: 'DATABASE_URL',
+    dialectOptions: { ssl: { require: true, rejectUnauthorized: true } },
   },
 };

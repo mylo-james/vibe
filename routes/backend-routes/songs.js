@@ -1,43 +1,26 @@
-const express = require('express');
-const { Song } = require('../../db/models');
-const { Artist } = require('../../db/models');
-const { Album } = require('../../db/models');
-const { asyncHandler } = require('../../utils');
-const { requireAuth } = require('../../auth')
-const router = express.Router();
-
-
-router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
-    const songId = parseInt(req.params.id);
+const router = require('express').Router();
+const { Song, Sequelize } = require('../../db/models');
+const { requireAuth } = require('../../auth');
+const { asyncHandler, positiveId, httpError } = require('../../utils');
+const { songInclude, serializeSong } = require('../../services/catalog');
+router.use(requireAuth);
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
     const songs = await Song.findAll({
-        where: {
-            id: songId,
-        },
-        include: [
-            {
-                model: Album,
-                include: [
-                    {
-                        model: Artist 
-                    }
-                ]
-            }]
-    })
-
-    const songsList = songs.map(song => {
-      return { 
-        songId: song.id, 
-        songName: song.songName,
-        albumName: song.Album.albumName, 
-        albumId: song.Album.id,
-        artistName: song.Album.Artist.artistName,
-        artistId: song.Album.Artist.id
-      }
-    })
-
-    res.json({ songsList });
-})
+      where: { audioPath: { [Sequelize.Op.ne]: null } },
+      include: songInclude,
+      order: [['id', 'ASC']],
+    });
+    res.json({ songsList: songs.map(serializeSong) });
+  }),
 );
-
-
-module.exports = router
+router.get(
+  '/:id',
+  asyncHandler(async (req, res) => {
+    const song = await Song.findByPk(positiveId(req.params.id), { include: songInclude });
+    if (!song || !song.audioPath) throw httpError(404, 'Song not found.');
+    res.json({ songsList: [serializeSong(song)] });
+  }),
+);
+module.exports = router;

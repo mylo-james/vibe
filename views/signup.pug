@@ -1,6 +1,19 @@
-extends ./components/head
-
+extends components/head
 block content
-  include ./components/overlay
-  include ./components/login/nav-bar
-  include ./components/signup/main
+  header.site-header
+    +brand
+    a(href='/login') Log in
+  main.auth-main#mainContent
+    h1 Make it your mix.
+    p Save your playlists with a Vibe account.
+    form#auth-form
+      +field('userName', 'Username', 'text', 'username')(maxlength='20')
+      +field('email', 'Email', 'email', 'email')(maxlength='100')
+      +field('confirmEmail', 'Confirm email', 'email', 'email')(maxlength='100')
+      +field('password', 'Password', 'password', 'new-password')(minlength='12' aria-describedby='password-help')
+      p.field-help#password-help Use at least 12 characters. A short passphrase works well.
+      +field('confirmPassword', 'Confirm password', 'password', 'new-password')(minlength='12')
+      p.notice#errors(role='alert' hidden)
+      button.button(type='submit') Create account
+    p Already listening? #[a(href='/login') Log in].
+  +footer

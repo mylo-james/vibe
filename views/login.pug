@@ -1,8 +1,15 @@
-extends ./components/head
-
+extends components/head
 block content
-  include ./components/overlay
-
-  include ./components/login/nav-bar
-  
-  include ./components/login/main
+  header.site-header
+    +brand
+    a(href='/signup') Create account
+  main.auth-main#mainContent
+    h1 Welcome back.
+    p Your playlists are waiting.
+    form#auth-form
+      +field('email', 'Email', 'email', 'email')(maxlength='100')
+      +field('password', 'Password', 'password', 'current-password')
+      p.notice#errors(role='alert' hidden)
+      button.button(type='submit') Log in
+    p New here? #[a(href='/signup') Create an account] or #[a(href='/') try the demo].
+  +footer

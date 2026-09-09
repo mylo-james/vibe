@@ -1,0 +1,95 @@
+/* The original dark/yellow Vibe identity, with content visible immediately. */
+.page-landing {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.landing-main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  align-items: center;
+  gap: 4rem;
+  padding: 4rem clamp(1.25rem, 8vw, 8rem);
+  overflow: hidden;
+}
+.landing-copy h1 {
+  font-size: clamp(3.1rem, 6vw, 6rem);
+  max-width: 9ch;
+}
+.lead {
+  font-size: 1.4rem;
+  color: var(--accent);
+  margin: 1.75rem 0 1rem;
+}
+.landing-copy > p:not(.lead) {
+  max-width: 40ch;
+  color: var(--muted);
+}
+.landing-copy .button {
+  margin: 1.25rem 0 0.75rem;
+  min-width: 200px;
+}
+.record-art {
+  width: min(38vw, 510px);
+  aspect-ratio: 1;
+  position: relative;
+  transform: rotate(-15deg);
+}
+.record-grooves {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: repeating-radial-gradient(circle, #171a14 0px, #171a14 4px, #32382a 5px, #171a14 6px);
+  border: 14px solid #10130e;
+  box-shadow: 15px 25px 35px #0a0c0960;
+}
+.record-label {
+  position: absolute;
+  inset: 30%;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font: 300 clamp(1.2rem, 3vw, 2.6rem)/1.5 var(--font-display);
+}
+.record-label span:last-child {
+  font: 700 0.7rem var(--font-body);
+}
+.record-label::after {
+  content: '';
+  position: absolute;
+  inset: 46%;
+  border-radius: 50%;
+  background: #171a14;
+}
+@media (max-width: 760px) {
+  .landing-main {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding-top: 2rem;
+  }
+  .record-art {
+    width: 65vw;
+    justify-self: center;
+  }
+  .site-header .button {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .record-art {
+    animation: settle 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  @keyframes settle {
+    from {
+      transform: rotate(-28deg) translateY(40px);
+    }
+    to {
+      transform: rotate(-15deg);
+    }
+  }
+}

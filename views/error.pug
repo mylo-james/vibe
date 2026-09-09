@@ -1,0 +1,9 @@
+extends components/head
+block content
+  header.site-header
+    +brand
+  main.auth-main#mainContent
+    h1= title
+    p= message
+    a.button(href='/music/home') Back to music
+  +footer

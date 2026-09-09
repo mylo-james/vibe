@@ -1,0 +1,26 @@
+mixin icon(name)
+  - const paths = { play: 'M8 5l11 7-11 7z', pause: 'M8 5v14M16 5v14', next: 'M5 5l11 7-11 7zM19 5v14', previous: 'M19 5L8 12l11 7zM5 5v14', shuffle: 'M3 5h3l12 14h3M18 16l3 3-3 3M3 19h3l4-5M14 10l4-5h3M18 2l3 3-3 3', repeat: 'M20 10a8.2 8.2 0 0 0-14-3l-3 3m0-5v5h5M4 14a8.2 8.2 0 0 0 14 3l3-3m0 5v-5h-5', plus: 'M12 5v14M5 12h14', search: 'M21 21l-5-5M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0', close: 'M6 6l12 12M18 6L6 18', volume: 'M3 9h4l5-4v14l-5-4H3zM16 8a6 6 0 0 1 0 8M19 5a10 10 0 0 1 0 14' }
+  svg.icon(viewBox='0 0 24 24' aria-hidden='true' focusable='false')
+    path(d=paths[name] fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round')
+
+mixin brand
+  a.brand(href='/' aria-label='Vibe home')
+    span.brand-mark(aria-hidden='true')
+      svg(viewBox='0 0 676 639' focusable='false')
+        defs
+          clipPath#brandClip
+            circle(cx='338' cy='319.5' r='318.5')
+        g(clip-path='url(#brandClip)')
+          circle(cx='338' cy='319.5' r='319.5' fill='currentColor')
+          path.brand-trace(data-motion d='M319.5,372.5H440.9c12.1,0,26.52,8.81,32.05,19.57l81.63,158.86c5.53,10.76,12.33,9.93,15.11-1.84l83.87-355.18c2.78-11.77,9.32-12.47,14.53-1.55l76,159.28c5.21,10.92,19.38,19.86,31.48,19.86h102.3c12.1,0,31.9,0,44-.08L1036,371' transform='translate(-319.5 -55)' pathLength='1' fill='none' stroke='#2e2e2e' stroke-width='30')
+    span.brand-name VIBE
+
+mixin field(name, label, type, autocomplete)
+  .field
+    label(for=name)= label
+    input(id=name name=name type=type autocomplete=autocomplete required)&attributes(attributes)
+
+mixin footer
+  footer.site-footer
+    a(href='/credits') Music & project credits
+    span Built with Pug, Express and plain JavaScript.

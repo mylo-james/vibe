@@ -1,24 +1,22 @@
+include ui
+
 doctype html
-html(lang="en")
+html(lang='en')
   head
-    meta(charset="UTF-8")
-    meta(name="apple-mobile-web-app-capable" content="yes")
-    meta(name="apple-mobile-web-app-status-bar-style" content="black-translucent")
-    meta(name="viewport" content="viewport-fit=cover, user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1")
-    meta(property="og:url" content="https://aa-vibe.herokuapp.com")
-    meta(property="og:type" content="website")
-    meta(property="og:title" content="Vibe")
-    meta(property="og:description" content="A Spotify clone using VanillaJS and Express. UI/UX Lead - Mylo James, Team Lead - Emily Burnham, Backend Lead - Geoffery Otieno")
-    meta(property="og:image" content="/public/images/Vibe.png")
-
-    link(rel='stylesheet' href=`/public/stylesheets/${fileName}.css` type="text/css")
-    link(rel='stylesheet' href=`/public/stylesheets/normalize.css` type="text/css")
-    link(href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100&family=Sintony:wght@400;700&display=swap" rel="stylesheet")
-    link(rel='icon' href="/public/images/favicon.ico" type="image/x-icon")
-    script(async defer src=`/public/js/${fileName}.js` type='module')
-    script(async defer src="https://kit.fontawesome.com/5f803584f1.js" crossorigin="anonymous")
+    meta(charset='UTF-8')
+    meta(name='viewport' content='width=device-width, initial-scale=1, viewport-fit=cover')
+    meta(name='description' content='Vibe: discover electronic, chill and game-inspired music, and make it your own playlist.')
+    link(rel='icon' href='/public/images/favicon.ico')
+    link(rel='stylesheet' href='/public/stylesheets/base.css')
+    link(rel='stylesheet' href=`/public/stylesheets/${page}.css`)
+    if page === 'music'
+      link(rel='stylesheet' href='/public/stylesheets/catalog.css')
+      link(rel='stylesheet' href='/public/stylesheets/library.css')
+    link(rel='stylesheet' href='/public/stylesheets/motion.css')
+    script(type='module' src='/public/js/motion.js')
+    if script
+      script(type='module' src=`/public/js/${script}.js`)
     title= title
-
-  body
-    include utils
+  body(class=`page-${page}`)
+    a.skip-link(href='#mainContent') Skip to content
     block content

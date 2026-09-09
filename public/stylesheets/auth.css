@@ -1,0 +1,28 @@
+/* Log in and sign-up share the same form layout. */
+.page-auth {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.auth-main {
+  width: min(100% - 2.5rem, 460px);
+  margin: 3rem auto 5rem;
+  flex: 1;
+}
+.auth-main > p {
+  color: var(--muted);
+}
+.auth-main form {
+  display: grid;
+  gap: 1.25rem;
+  margin: 2rem 0;
+}
+.auth-main .field-help {
+  margin: -0.75rem 0 0;
+}
+.auth-main .notice {
+  margin: 0;
+}
+.auth-main h1 {
+  margin-bottom: 0.75rem;
+}

@@ -1,20 +1,21 @@
 #!/usr/bin/env node
-
-const { port } = require('../config');
-
+const { host, port, jwtConfig } = require('../config');
+if (!jwtConfig.secret || jwtConfig.secret.length < 32) {
+  console.error('Set JWT_SECRET to a random value of at least 32 characters.');
+  process.exit(1);
+}
 const app = require('../app');
 const db = require('../db/models');
-
-//authenticating the database connection 
-db.sequelize.authenticate()
-    .then(()=> {
-        console.log('Database connection success!');
-        app.listen(port, ()=> console.log(`Listening on port ${port}...`));
-    })
-    .catch((err) =>{
-        console.log('Database connection failure..');
-        console.error(err)
-    });
-
-
-
+let server;
+(async () => {
+  await db.sequelize.authenticate();
+  server = app.listen(port, host, () => console.log(`Vibe listening on http://${host}:${port}`));
+  server.on('error', error => { console.error(error.message); process.exit(1); });
+})().catch(error => { console.error('Database connection failed:', error.message); process.exit(1); });
+async function shutdown() {
+  if (server) await new Promise(resolve => server.close(resolve));
+  await db.sequelize.close();
+  process.exit(0);
+}
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);

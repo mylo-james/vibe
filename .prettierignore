@@ -1,1 +1,7 @@
-*.md
+node_modules/
+public/music/
+public/fonts/
+package-lock.json
+db/migrations/2020*
+playwright-report/
+test-results/
