@@ -2,8 +2,14 @@ const jwt = require('jsonwebtoken');
 const { jwtConfig } = require('./config');
 const { User } = require('./db/models');
 const { asyncHandler, httpError } = require('./utils');
+const { cookieIsSecure } = require('./config/hosting');
 const cookieName = 'vibe_session';
-const cookieOptions = (req) => ({ httpOnly: true, sameSite: 'lax', secure: req.secure, path: '/' });
+const cookieOptions = (req) => ({
+  httpOnly: true,
+  sameSite: 'lax',
+  secure: cookieIsSecure(req),
+  path: '/',
+});
 const getUserToken = (user) =>
   jwt.sign({ sub: String(user.id) }, jwtConfig.secret, {
     algorithm: 'HS256',
@@ -39,4 +45,10 @@ const requireAuth = asyncHandler(async (req, res, next) => {
   }
   next();
 });
-module.exports = { requireAuth, getUserToken, setSession, clearSession };
+module.exports = {
+  requireAuth,
+  getUserToken,
+  setSession,
+  clearSession,
+  cookieOptions,
+};

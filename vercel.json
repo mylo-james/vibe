@@ -1,0 +1,6 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "express",
+  "regions": ["cle1"],
+  "rewrites": [{ "source": "/public/:path*", "destination": "/:path*" }]
+}
