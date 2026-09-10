@@ -39,7 +39,8 @@ test('listener can build, find, rename, remove and delete a playlist with safe t
   await demo(page);
   await page.getByRole('link', { name: 'Local collection', exact: true }).click();
   await page.getByRole('link', { name: 'Library', exact: true }).click();
-  await page.getByRole('button', { name: 'Create playlist', exact: true }).last().click();
+  await page.getByRole('link', { name: /^Playlists \d+$/, exact: true }).click();
+  await page.getByRole('button', { name: 'Create playlist', exact: true }).click();
   const literal = '<img src=x onerror=alert(1)>';
   await page.getByLabel('Playlist name', { exact: true }).fill(literal);
   await page.getByRole('button', { name: 'Save playlist' }).click();
@@ -50,6 +51,9 @@ test('listener can build, find, rename, remove and delete a playlist with safe t
   await page.getByRole('link', { name: 'Local collection', exact: true }).click();
   await page.getByLabel('Search Discover or your Library').fill('Holizna');
   await expect(page.locator('.track-row')).toHaveCount(1);
+  await expect(
+    page.getByRole('button', { name: 'Add Chills to playlist', exact: true }),
+  ).toHaveText('+');
   await page.getByRole('button', { name: 'Add Chills to playlist', exact: true }).click();
   await page.getByRole('button', { name: literal, exact: true }).click();
   await expect(page.locator('#status')).toContainText('Added');
@@ -66,6 +70,7 @@ test('listener can build, find, rename, remove and delete a playlist with safe t
   await page.goForward();
   await expect(page.getByRole('heading', { name: 'Your Library' })).toBeVisible();
   await page.goto(playlistURL);
+  await expect(page.getByRole('button', { name: 'Remove Chills from playlist' })).toHaveText('×');
   await page.getByRole('button', { name: 'Remove Chills from playlist' }).click();
   await expect(page.getByRole('heading', { name: 'Your mix starts here.' })).toBeVisible();
   await page.getByRole('button', { name: 'Delete playlist', exact: true }).click();
@@ -172,7 +177,8 @@ for (const [label, viewport] of [
     await fits(page);
     await page.screenshot({ path: testInfo.outputPath(label + '-music.png'), fullPage: true });
     await page.getByRole('link', { name: 'Library', exact: true }).click();
-    await page.getByRole('button', { name: 'Create playlist', exact: true }).last().click();
+    await page.getByRole('link', { name: /^Playlists \d+$/, exact: true }).click();
+    await page.getByRole('button', { name: 'Create playlist', exact: true }).click();
     await accessible(page);
     await page.getByLabel('Playlist name', { exact: true }).fill('Keyboard mix');
     await page.keyboard.press('Escape');

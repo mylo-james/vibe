@@ -3,7 +3,12 @@ const { query } = require('express-validator');
 const { Song, Playlist, Sequelize } = require('../../db/models');
 const { requireAuth } = require('../../auth');
 const { asyncHandler, handleValidationErrors } = require('../../utils');
-const { songInclude, serializeSong, playlistSummary } = require('../../services/catalog');
+const {
+  songInclude,
+  playlistInclude,
+  serializeSong,
+  playlistSummary,
+} = require('../../services/catalog');
 router.use(requireAuth);
 router.get(
   '/',
@@ -27,6 +32,7 @@ router.get(
     ).map(serializeSong);
     const playlists = await Playlist.findAll({
       where: { userId: req.user.id },
+      include: playlistInclude,
       order: [['id', 'ASC']],
     });
     res.json({

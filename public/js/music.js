@@ -1,7 +1,7 @@
 import { api, clearLegacySession } from './api.js';
 import { createPlayer } from './player.js';
 import { createCatalogCache } from './catalog-cache.js';
-import { element, artwork, externalLink, duration } from './music-ui.js';
+import { element, artwork, playlistArtwork, externalLink, duration } from './music-ui.js';
 const $ = (selector) => document.querySelector(selector);
 const content = $('#mainContent'),
   status = $('#status'),
@@ -114,11 +114,32 @@ function playlistList(list) {
   const container = element('div', undefined, 'playlist-list');
   for (const playlist of list) {
     const link = playlistLink(playlist);
+    const song = playlist.firstSong && cache.display(playlist.firstSong);
     link.className = 'playlist-tile';
-    link.prepend(element('span', 'Your mix', 'playlist-kind'));
+    link.dataset.playlistId = playlist.playlistId;
+    link.setAttribute('aria-label', playlist.playList);
+    const copy = element('span', undefined, 'playlist-copy');
+    copy.append(element('strong', playlist.playList));
+    copy.append(element('span', song?.songName || 'Empty playlist', 'playlist-kind'));
+    link.replaceChildren(playlistArtwork(song), copy);
     container.append(link);
   }
   return container;
+}
+async function loadPlaylistCovers(list, revision) {
+  try {
+    await cache.hydrate(list.map((playlist) => playlist.firstSong).filter(Boolean));
+  } catch {
+    if (revision === navigation)
+      message('Some playlist artwork is unavailable. Your mixes are still ready to play.');
+  }
+  if (revision !== navigation) return;
+  for (const link of content.querySelectorAll('.playlist-tile')) {
+    const playlist = list.find((item) => String(item.playlistId) === link.dataset.playlistId);
+    const song = playlist.firstSong && cache.display(playlist.firstSong);
+    link.querySelector('.playlist-cover').replaceWith(playlistArtwork(song));
+    link.querySelector('.playlist-kind').textContent = song?.songName || 'Empty playlist';
+  }
 }
 function saveButton(item, kind = 'songs') {
   const key = kind === 'songs' ? 'songId' : 'albumId';
@@ -201,7 +222,7 @@ function songList(songs, { removable = false } = {}) {
     play.append(element('span', String(index + 1).padStart(2, '0'), 'track-number'), copy);
     const controls = element('div', undefined, 'track-actions');
     controls.append(saveButton(song));
-    const action = button(removable ? 'Remove' : 'Add', async () => {
+    const action = button(removable ? '×' : '+', async () => {
       if (!removable) return openAdd(song);
       await api(`/playlists/${currentPlaylist}/songs/${song.songId}`, { method: 'DELETE' });
       await render();
@@ -212,6 +233,8 @@ function songList(songs, { removable = false } = {}) {
       'aria-label',
       `${removable ? 'Remove' : 'Add'} ${song.songName}${removable ? ' from playlist' : ' to playlist'}`,
     );
+    action.classList.add('playlist-action');
+    action.title = action.getAttribute('aria-label');
     controls.append(action);
     row.append(
       play,
@@ -233,11 +256,10 @@ function trackCards(songs) {
     play.append(artwork(song), element('span', 'Play', 'cover-play-label'));
     card.append(play, element('h3', song.songName), element('p', song.artistName, 'muted'));
     const actions = element('div', undefined, 'track-actions');
-    actions.append(
-      saveButton(song),
-      button('Add', () => openAdd(song)),
-      credits(song),
-    );
+    const add = button('+', () => openAdd(song), 'text-button playlist-action');
+    add.setAttribute('aria-label', `Add ${song.songName} to playlist`);
+    add.title = add.getAttribute('aria-label');
+    actions.append(saveButton(song), add, credits(song));
     card.append(actions);
     grid.append(card);
   }
@@ -502,11 +524,14 @@ async function render() {
       albumData = { album: cache.albumDisplay(ref), songs: [], error: error.message };
     }
   } else if (path === '/music/library') {
-    try {
-      await cache.hydrate(library);
-    } catch {
-      catalogError = 'unavailable';
-    }
+    const playlistTab = params.get('tab') === 'playlists';
+    if (playlistTab) await refreshPlaylists();
+    if (!playlistTab)
+      try {
+        await cache.hydrate(library);
+      } catch {
+        catalogError = 'unavailable';
+      }
     if (params.get('tab') === 'albums')
       for (const ref of savedAlbums) {
         try {
@@ -583,13 +608,7 @@ async function render() {
     const tab = ['songs', 'albums', 'playlists'].includes(params.get('tab'))
       ? params.get('tab')
       : 'songs';
-    const header = heading(
-      'Your Library',
-      user.demo
-        ? 'Songs, albums, and mixes are ready to play. Make them yours for this two-hour session.'
-        : 'Saved by you. Ready for another listen.',
-    );
-    header.append(button('Create playlist', () => openPlaylist(), 'button button-quiet'));
+    heading('Your Library');
     const tabs = element('nav', undefined, 'library-tabs');
     tabs.setAttribute('aria-label', 'Library collections');
     for (const [key, name, count] of [
@@ -622,7 +641,11 @@ async function render() {
       params.set('sort', sort.value);
       run(() => navigate('/music/library?' + params, { focus: false }));
     });
-    sortbar.append(label, sort);
+    if (tab === 'playlists')
+      sortbar.append(button('Create playlist', () => openPlaylist(), 'button button-quiet'));
+    const sorting = element('div', undefined, 'library-sort');
+    sorting.append(label, sort);
+    sortbar.append(sorting);
     content.append(sortbar);
     const query = (params.get('q') || '').toLowerCase();
     const items = (
@@ -649,11 +672,11 @@ async function render() {
     else items.sort((a, b) => new Date(b.savedAt || 0) - new Date(a.savedAt || 0));
     if (items.length) {
       if (tab === 'songs') {
-        content.append(
-          button('Play saved songs', () => player.select(items), 'button'),
-          songList(items),
-        );
-      } else content.append(tab === 'albums' ? albumShelf(items) : playlistList(items));
+        content.append(songList(items));
+      } else {
+        content.append(tab === 'albums' ? albumShelf(items) : playlistList(items));
+        if (tab === 'playlists') void loadPlaylistCovers(items, revision);
+      }
     } else
       empty(
         query ? 'Nothing here matches.' : `No saved ${tab} yet.`,
@@ -740,7 +763,6 @@ function openPlaylist(name = '', id = null) {
   $('#dialogError').hidden = true;
   $('#playlistDialog').showModal();
 }
-$('#newPlaylistButton').addEventListener('click', () => openPlaylist());
 $('#closeDialog').addEventListener('click', () => $('#playlistDialog').close());
 $('#playlistForm').addEventListener('submit', async (event) => {
   event.preventDefault();

@@ -30,3 +30,9 @@ Load order is base, page shell, catalog, Library, then motion. `base.css` owns t
 Discover is album-led: show the featured release and album shelf before filters and track tools. On phones, only the Discover album shelf becomes a horizontal, scroll-snapping carousel; Albums and Library retain their grids. Album shelves use six columns on desktop, three at tablet widths, and two columns on other phone screens.
 
 Load the featured album and initial track selection first, then hydrate the remaining albums in small batches before the rest of the track catalog. Use settled results for independent catalog requests: a failed provider detail must show the retry/local-collection notice without preventing already loaded music from rendering.
+
+## Library and playlist covers
+
+Keep the Library heading compact. Its Create playlist button belongs below the collection tabs, alongside sorting, and appears only in the Playlists view. The sidebar does not repeat the creation action. Saved songs play from their track rows, without a separate bulk-play button. Playlist actions use + to add and × to remove, with named accessible labels, tooltips and 44px touch targets; saving music to Library remains a separate control.
+
+Playlist tiles use the first song in playlist membership order as their cover. Fetch only that reference with each playlist summary, then resolve provider artwork through the document's catalog cache without blocking the playlist list. Refresh summaries when opening Playlists so removing the first song updates the cover. Local tracks without artwork, empty playlists, and failed images use a decorative record fallback. Use square covers on desktop and compact leading thumbnails on phones; keep the whole tile one named link. Library cover and fallback styles belong in `library.css`.
