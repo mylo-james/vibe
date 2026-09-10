@@ -9,14 +9,19 @@ block content
         button.icon-button(type='submit' aria-label='Search')
           +icon('search')
       .account-menu
-        span#welcome
-        button.text-button#logoutButton(type='button') Log out
+        if publicDemo
+          span#welcome Demo listener
+          span.demo-session Temporary demo · 2-hour session
+          button.text-button#logoutButton(type='button') End demo
+        else
+          span#welcome
+          button.text-button#logoutButton(type='button') Log out
     aside.sidebar
       nav.primary-nav(aria-label='Music')
         a(href='/music/discover' data-nav='discover') Discover
         a(href='/music/library' data-nav='library') Library
       .sidebar-heading
-        h2 Your playlists
+        h2= publicDemo ? 'Temporary playlists' : 'Your playlists'
         button.icon-button#newPlaylistButton(type='button' aria-label='Create playlist')
           +icon('plus')
       nav.playlist-nav#sidebarPlaylists(aria-label='Your playlists')

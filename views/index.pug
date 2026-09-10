@@ -3,15 +3,25 @@ block content
   header.site-header
     +brand
     nav(aria-label='Account')
-      a(href='/login') Log in
-      a.button.button-quiet(href='/signup') Create account
+      if publicDemo
+        span.session-badge Demo only · 2-hour session
+      else
+        a(href='/login') Log in
+        a.button.button-quiet(href='/signup') Create account
   main.landing-main#mainContent
     .landing-copy
-      h1 What's your VIBE?
-      p.lead Music for your mood.
-      p Electronic drift, quiet focus, and a little arcade energy. Find a track. Make a playlist. Stay a while.
-      button.button#demoButton(type='button') Try the demo
-      p.demo-note Your own demo workspace. No sign-up needed.
+      if publicDemo
+        h1 Find a little VIBE.
+        p.lead A temporary music room.
+        p Start a private listening session for up to two hours. Save tracks, make playlists, and hear the credited catalog. Your session expires after two hours. Its saved data is deleted when a new demo starts or during daily cleanup.
+        button.button#demoButton(type='button' data-idle-label='Start a 2-hour demo') Start a 2-hour demo
+        p.demo-note No account, email, or lasting profile.
+      else
+        h1 What's your VIBE?
+        p.lead Music for your mood.
+        p Electronic drift, quiet focus, and a little arcade energy. Find a track. Make a playlist. Stay a while.
+        button.button#demoButton(type='button' data-idle-label='Try the demo') Try the demo
+        p.demo-note Your own demo workspace. No sign-up needed.
       p.notice#error(role='alert' hidden)
     .record-art(aria-hidden='true')
       .record-disk(data-motion)

@@ -2,5 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "express",
   "regions": ["cle1"],
-  "rewrites": [{ "source": "/public/:path*", "destination": "/:path*" }]
+  "rewrites": [{ "source": "/public/:path*", "destination": "/:path*" }],
+  "crons": [{ "path": "/api/maintenance/cleanup", "schedule": "31 8 * * *" }]
 }
