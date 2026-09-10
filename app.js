@@ -3,15 +3,20 @@ const path = require('node:path');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const { httpError } = require('./utils');
+const { allowsWriteOrigin, trustProxy } = require('./config/hosting');
 const app = express();
+const portfolioOrigin = require('./config/portfolio-embed').portfolioEmbedOrigin();
 app.disable('x-powered-by');
-app.set('trust proxy', 'loopback');
+app.set('trust proxy', trustProxy());
 app.set('view engine', 'pug');
 app.set('views', path.join(__dirname, 'views'));
 app.use(
   helmet({
+    // CSP supplies the exact parent allowlist when embedding is explicitly enabled.
+    xFrameOptions: portfolioOrigin ? false : undefined,
     contentSecurityPolicy: {
       directives: {
+        frameAncestors: ["'self'", ...(portfolioOrigin ? [portfolioOrigin] : [])],
         defaultSrc: ["'self'"],
         scriptSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
@@ -30,11 +35,7 @@ app.use(cookieParser());
 app.use('/api', (req, res, next) => {
   res.set('Cache-Control', 'no-store');
   if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
-    const origin = req.get('Origin');
-    if (
-      req.get('Sec-Fetch-Site') === 'cross-site' ||
-      (origin && origin !== `${req.protocol}://${req.get('host')}`)
-    )
+    if (req.get('Sec-Fetch-Site') === 'cross-site' || !allowsWriteOrigin(req))
       return next(httpError(403, 'Open Vibe directly to make changes.'));
   }
   next();
