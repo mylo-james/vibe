@@ -244,7 +244,7 @@ test('demos are private, expire, and clean up only expired demo data', async () 
   const owned = (
     await request(`/users/${first.data.user.userId}/playlists`, { cookie: first.cookie })
   ).data.playlistNames;
-  assert.equal(owned.length, 3);
+  assert.equal(owned.length, 6);
   assert.equal(
     (await request(`/playlists/${owned[0].playlistId}/songs`, { cookie: second.cookie })).status,
     403,
@@ -497,7 +497,7 @@ test('feature migration rolls back atomically and copies legacy Library only onc
   );
   const demo = await request('/demo', { method: 'POST' });
   const did = demo.data.user.userId;
-  await SavedSong.create({ userId: did, songId });
+  assert.equal(await SavedSong.count({ where: { userId: did, songId } }), 1);
   await User.update({ demoExpiresAt: new Date(0) }, { where: { id: did } });
   await request('/demo', { method: 'POST' });
   assert.equal(await SavedSong.count({ where: { userId: did } }), 0);

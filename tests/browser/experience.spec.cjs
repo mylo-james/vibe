@@ -193,7 +193,7 @@ test('phone playlist controls remain reachable and browser errors offer navigati
   await demo(page);
   await page.getByRole('link', { name: 'Local collection', exact: true }).click();
   await page.getByRole('link', { name: 'Library', exact: true }).click();
-  await page.getByRole('link', { name: 'Playlists 3', exact: true }).click();
+  await page.getByRole('link', { name: 'Playlists 6', exact: true }).click();
   await page.getByRole('link', { name: 'Press start', exact: true }).last().click();
   await expect(page.getByRole('heading', { name: 'Press start', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Play Level 1', exact: true }).click();

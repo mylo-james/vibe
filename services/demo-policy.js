@@ -68,26 +68,56 @@ async function removeExpiredDemoUsers(models, transaction, now = new Date()) {
   return userIds.length;
 }
 
-async function createFixturePlaylists(models, user, transaction) {
-  const { Playlist, PlaylistSong, Song } = models;
-  const songs = await Song.findAll({
+async function createStarterCollection(models, user, transaction) {
+  const { Playlist, PlaylistSong, Song, Album, SavedSong, SavedAlbum } = models;
+  const { manifest, ensureReferences } = require('./catalog-references');
+  await ensureReferences(transaction);
+  const localSongs = await Song.findAll({
     where: { audioPath: { [Op.ne]: null } },
     order: [['id', 'ASC']],
     transaction,
   });
+  const selectedIds = [...new Set(manifest.sections.flatMap((section) => section.trackIds))];
+  const remoteSongs = await Song.findAll({
+    where: { source: 'audius', sourceId: selectedIds },
+    transaction,
+  });
+  const bySourceId = new Map(remoteSongs.map((song) => [song.sourceId, song]));
+  const albums = await Album.findAll({
+    where: { source: 'audius', sourceId: manifest.albums },
+    order: [['id', 'ASC']],
+    transaction,
+  });
+  await SavedSong.bulkCreate(
+    [...selectedIds.map((id) => bySourceId.get(id)), ...localSongs].map((song) => ({
+      userId: user.id,
+      songId: song.id,
+    })),
+    { transaction },
+  );
+  await SavedAlbum.bulkCreate(
+    albums.map((album) => ({ userId: user.id, albumId: album.id })),
+    { transaction },
+  );
+  const selections = [];
   for (const [name, style] of [
     ['Late-night focus', 'Chill'],
     ['Press start', 'Chiptune'],
     ['Electronic drift', 'Electronic'],
-  ]) {
+  ])
+    selections.push({ name, songs: localSongs.filter((song) => song.style === style) });
+  for (const section of manifest.sections)
+    selections.push({
+      name: section.name,
+      songs: section.trackIds.map((id) => bySourceId.get(id)),
+    });
+  for (const { name, songs } of selections) {
     const playlist = await Playlist.create(
       { playlistName: name, userId: user.id },
       { transaction },
     );
     await PlaylistSong.bulkCreate(
-      songs
-        .filter((song) => song.style === style)
-        .map((song) => ({ song: song.songName, songId: song.id, playlistId: playlist.id })),
+      songs.map((song) => ({ song: song.songName, songId: song.id, playlistId: playlist.id })),
       { transaction },
     );
   }
@@ -131,7 +161,7 @@ async function admitDemo(models, { publicDemo = publicDemoEnabled() } = {}) {
       },
       { transaction },
     );
-    await createFixturePlaylists(models, user, transaction);
+    await createStarterCollection(models, user, transaction);
     return user;
   });
 }

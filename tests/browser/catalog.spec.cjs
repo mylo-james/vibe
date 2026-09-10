@@ -78,6 +78,21 @@ async function demo(page) {
 async function settled(page) {
   await expect(page.locator('.catalog-notice')).toHaveCount(0);
 }
+async function emptySavedLibrary(page) {
+  // Empty-state and one-track queue tests explicitly arrange their own demo's state.
+  const { user } = await (await page.request.get('/api/session')).json();
+  const path = `/api/users/${user.userId}/library`;
+  const { library, albums } = await (await page.request.get(path)).json();
+  for (const [kind, refs, key] of [
+    ['songs', library, 'songId'],
+    ['albums', albums, 'albumId'],
+  ])
+    for (const ref of refs)
+      expect((await page.request.delete(`${path}/${kind}/${ref[key]}`)).status()).toBe(204);
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Discover', exact: true })).toBeVisible();
+  await settled(page);
+}
 async function fit(page) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   for (const item of await page
@@ -101,6 +116,7 @@ test('Discover, albums, independent saves, playlists and session cache form one 
   const album = state.catalog.albums[0];
   const track = state.catalog.songs.find((s) => s.source === 'audius');
   const name = 'Track ' + track.sourceId;
+  await emptySavedLibrary(page);
   await page.getByRole('link', { name: 'Explore album', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: 'Release ' + album.albumId, exact: true }),
@@ -135,6 +151,7 @@ test('fresh-session provider failure keeps saved references removable and local 
   const state = await provider(page);
   await demo(page);
   await settled(page);
+  await emptySavedLibrary(page);
   await page.getByRole('link', { name: 'All tracks', exact: true }).click();
   const ref = state.catalog.songs.find((s) => s.source === 'audius'),
     name = 'Track ' + ref.sourceId;
@@ -238,7 +255,14 @@ test('record and original waveform respect system reduced motion and offscreen s
   await expect
     .poll(() => disk.evaluate((n) => getComputedStyle(n).animationPlayState))
     .toBe('paused');
+  // CSS reports "paused" before the browser commits the pending pause timestamp.
+  await disk.evaluate((node) =>
+    Promise.all(node.getAnimations().map((animation) => animation.ready)),
+  );
   const angle = await disk.evaluate((n) => getComputedStyle(n).transform);
+  await disk.evaluate(
+    () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+  );
   expect(await disk.evaluate((n) => getComputedStyle(n).transform)).toBe(angle);
   expect(await page.locator('.brand-trace').getAttribute('d')).toContain('83.87-355.18');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
@@ -358,6 +382,7 @@ test('a stalled stream lookup times out and cannot autoplay when its response ar
   const state = await provider(page);
   await demo(page);
   await settled(page);
+  await emptySavedLibrary(page);
   await page.getByRole('link', { name: 'All tracks', exact: true }).click();
   const track = state.catalog.songs.find((s) => s.source === 'audius');
   // A one-song Library makes queue exhaustion the intended result of this timeout.
@@ -394,4 +419,102 @@ test('a stalled stream lookup times out and cannot autoplay when its response ar
     true,
   );
   await expect(page.locator('#trackTitle')).not.toHaveText('Too late');
+});
+
+for (const width of [320, 390])
+  test(`compact mobile controls preserve playback and album discovery at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 844 });
+    const state = await provider(page);
+    await demo(page);
+    await settled(page);
+    const shell = await page.evaluate(() => {
+      const rect = (selector) => document.querySelector(selector).getBoundingClientRect();
+      return {
+        top: rect('.music-header').height + rect('.sidebar').height,
+        player: rect('.player').height,
+        albumTop: rect('.discover-albums .cover-art').top,
+        playerTop: rect('.player').top,
+      };
+    });
+    expect(shell.top).toBeLessThanOrEqual(110);
+    expect(shell.player).toBeLessThanOrEqual(96);
+    expect(shell.albumTop).toBeLessThan(shell.playerTop);
+    await fit(page);
+    const more = page.getByRole('button', { name: 'More playback controls' });
+    await expect(more).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.getByRole('button', { name: 'Shuffle', exact: true })).toBeHidden();
+    await page.getByRole('link', { name: 'Explore album', exact: true }).click();
+    await page.getByRole('button', { name: 'Play album', exact: true }).click();
+    await expect
+      .poll(() => page.locator('audio').evaluate((audio) => audio.currentTime))
+      .toBeGreaterThan(0);
+    await more.click();
+    await page.getByRole('button', { name: 'Shuffle', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Shuffle', exact: true })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await page.getByRole('button', { name: 'Repeat off', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Repeat all', exact: true })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(more).toBeFocused();
+    await expect(more).toHaveAttribute('aria-expanded', 'false');
+    await page.getByRole('button', { name: 'Next track', exact: true }).click();
+    await expect.poll(() => state.streams.length).toBe(2);
+    await page.getByRole('button', { name: 'Pause', exact: true }).click();
+    await expect(page.locator('audio')).toHaveJSProperty('paused', true);
+    await page.getByRole('link', { name: 'Discover', exact: true }).click();
+    await page.getByRole('link', { name: 'View all albums', exact: true }).click();
+    await expect(page.locator('.album-card')).toHaveCount(6);
+    await fit(page);
+  });
+
+test('a failed featured album still loads the remaining albums and track catalog', async ({
+  page,
+}) => {
+  const state = await provider(page);
+  await page.route('**/api/catalog/albums/*', async (route) => {
+    const id = Number(new URL(route.request().url()).pathname.split('/').pop());
+    if (id !== state.catalog.albums[0].albumId) return route.fallback();
+    await route.fulfill({ status: 503, json: { message: 'Album unavailable' } });
+  });
+  await demo(page);
+  await expect(page.getByRole('button', { name: 'Retry catalog', exact: true })).toBeVisible();
+  await expect(page.locator('.discover-albums h3').filter({ hasText: 'Release' })).toHaveCount(5);
+  await page.getByRole('link', { name: 'All tracks', exact: true }).click();
+  await expect(page.locator('.track-play:not(:disabled)')).toHaveCount(100);
+});
+
+test('a fresh demo can play saved songs, albums and populated playlists without building a collection', async ({
+  page,
+}) => {
+  await provider(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await demo(page);
+  await settled(page);
+  await page.getByRole('link', { name: 'Library', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Songs 34', exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Albums 6', exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Playlists 6', exact: true })).toBeVisible();
+  await expect(page.locator('.track-row')).toHaveCount(34);
+  await page.getByRole('button', { name: 'Play saved songs', exact: true }).click();
+  await expect
+    .poll(() => page.locator('audio').evaluate((audio) => audio.currentTime))
+    .toBeGreaterThan(0);
+  await page.getByRole('link', { name: 'Albums 6', exact: true }).click();
+  await expect(page.locator('.album-card')).toHaveCount(6);
+  expect(await page.locator('audio').evaluate((audio) => audio.paused)).toBe(false);
+  await page.getByRole('link', { name: 'Playlists 6', exact: true }).click();
+  await expect(page.locator('.playlist-tile')).toHaveCount(6);
+  await page.locator('.playlist-list').getByRole('link', { name: 'Press start' }).click();
+  await expect(page.locator('.track-row')).toHaveCount(5);
+  await page.getByRole('button', { name: 'Play all', exact: true }).click();
+  await expect
+    .poll(() => page.locator('audio').evaluate((audio) => audio.currentTime))
+    .toBeGreaterThan(0);
+  await page.getByRole('button', { name: 'Pause', exact: true }).click();
+  await expect(page.locator('audio')).toHaveJSProperty('paused', true);
+  await fit(page);
 });

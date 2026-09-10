@@ -16,17 +16,19 @@ async function startDemo(page) {
   await showPublicLanding(page);
   await page.getByRole('button', { name: 'Start a 2-hour demo', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Discover', exact: true })).toBeVisible();
+  await page.locator('.discover-demo summary').click();
   await expect(
     page.getByText(
       'This temporary listening space expires after two hours. Its saved playlists and music are deleted when a new demo starts or during daily cleanup.',
     ),
   ).toBeVisible();
+  await page.locator('.discover-demo summary').click();
 }
 
 async function expectPhoneFit(page, viewport) {
   await page.setViewportSize(viewport);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  for (const name of ['Play', 'Pause', 'Next track', 'Previous track']) {
+  for (const name of ['Play', 'Pause', 'Next track', 'More playback controls']) {
     const control = page.getByRole('button', { name, exact: true });
     if (!(await control.count())) continue;
     const box = await control.boundingBox();

@@ -139,7 +139,8 @@ test('public admission is serialized at 39 to 40 and 99 to 100', async () => {
 
 test('public demo playlist creation is serialized at 19 to 20 including fixtures', async () => {
   const user = await admitDemo(models);
-  for (let index = 0; index < MAX_DEMO_PLAYLISTS - 4; index++)
+  const starterCount = await Playlist.count({ where: { userId: user.id } });
+  for (let index = starterCount; index < MAX_DEMO_PLAYLISTS - 1; index++)
     await Playlist.create({ playlistName: `mix ${index}`, userId: user.id });
   const cookie = `vibe_session=${getUserToken(user)}`;
   const results = await Promise.all(
@@ -210,4 +211,98 @@ test('cleanup deletes only expired demo ownership and cron accepts one exact gen
     404,
   );
   assert.equal(await cleanupPublicDemos(models), 0);
+});
+
+test('new demos own a populated library and six playable starter playlists before catalog browsing', async () => {
+  const first = await request('/demo', { method: 'POST' });
+  const second = await request('/demo', { method: 'POST' });
+  assert.equal(first.status, 201);
+  assert.equal(second.status, 201);
+  const id = first.data.user.userId;
+  const libraryPath = `/users/${id}/library`;
+  const saved = await request(libraryPath, { cookie: first.cookie });
+  assert.equal(saved.status, 200);
+  assert.equal(saved.data.library.length, 34);
+  assert.equal(saved.data.albums.length, 6);
+  assert.equal(saved.data.library.filter((song) => song.source === 'local').length, 10);
+  assert.equal(saved.data.library.filter((song) => song.source === 'audius').length, 24);
+  assert.equal(new Set(saved.data.library.map((song) => song.songId)).size, 34);
+  const playlists = (await request(`/users/${id}/playlists`, { cookie: first.cookie })).data
+    .playlistNames;
+  assert.deepEqual(
+    playlists.map((playlist) => playlist.playList).sort(),
+    [
+      'A softer landing',
+      'After hours',
+      'Electronic drift',
+      'Late-night focus',
+      'Press start',
+      'Turn it up',
+    ].sort(),
+  );
+  for (const playlist of playlists) {
+    const tracks = await request(`/playlists/${playlist.playlistId}/songs`, {
+      cookie: first.cookie,
+    });
+    assert.equal(tracks.status, 200);
+    assert.ok(tracks.data.songsList.length >= 2);
+    assert.ok(
+      tracks.data.songsList.every((song) =>
+        saved.data.library.some((saved) => saved.songId === song.songId),
+      ),
+    );
+    if (['A softer landing', 'After hours', 'Turn it up'].includes(playlist.playList)) {
+      assert.equal(tracks.data.songsList.length, 8);
+      assert.ok(tracks.data.songsList.every((song) => song.source === 'audius'));
+    } else assert.ok(tracks.data.songsList.every((song) => song.audioPath));
+  }
+  const song = saved.data.library.find((song) => song.source === 'local');
+  assert.equal(
+    (
+      await request(`${libraryPath}/songs/${song.songId}`, {
+        cookie: second.cookie,
+        method: 'DELETE',
+      })
+    ).status,
+    403,
+  );
+  assert.equal(
+    (
+      await request(`${libraryPath}/songs/${song.songId}`, {
+        cookie: first.cookie,
+        method: 'DELETE',
+      })
+    ).status,
+    204,
+  );
+  assert.equal((await request(libraryPath, { cookie: first.cookie })).data.library.length, 33);
+  const secondSaved = await request(`/users/${second.data.user.userId}/library`, {
+    cookie: second.cookie,
+  });
+  assert.equal(secondSaved.data.library.length, 34);
+  assert.ok(secondSaved.data.library.some((saved) => saved.songId === song.songId));
+  // Refreshing session/catalog must not silently restore a save the visitor removed.
+  await request('/session', { cookie: first.cookie });
+  await request('/catalog', { cookie: first.cookie });
+  assert.equal((await request(libraryPath, { cookie: first.cookie })).data.library.length, 33);
+  const remote = await Song.findOne({ where: { source: 'audius' } });
+  assert.equal(remote.songName, null);
+  assert.equal(remote.audioPath, null);
+});
+
+test('starter collection failure rolls back the demo user and its collection together', async (t) => {
+  const counts = async () =>
+    Promise.all([
+      User.count(),
+      Playlist.count(),
+      PlaylistSong.count(),
+      SavedSong.count(),
+      SavedAlbum.count(),
+    ]);
+  const before = await counts();
+  t.mock.method(SavedAlbum, 'bulkCreate', async () => {
+    throw new Error('Injected starter failure');
+  });
+  await assert.rejects(admitDemo(models), /Injected starter failure/);
+  assert.deepEqual(await counts(), before);
 });
