@@ -67,7 +67,8 @@ test('public mode opens a disposable music session without lasting account paths
   expect(await page.locator('audio').evaluate((audio) => audio.currentTime)).toBeGreaterThan(10);
 
   await page.getByRole('link', { name: 'Library', exact: true }).click();
-  await page.getByRole('button', { name: 'Create playlist', exact: true }).last().click();
+  await page.getByRole('link', { name: /^Playlists \d+$/, exact: true }).click();
+  await page.getByRole('button', { name: 'Create playlist', exact: true }).click();
   await page.getByLabel('Playlist name', { exact: true }).fill('Two hour mix');
   await page.getByRole('button', { name: 'Save playlist', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Two hour mix', exact: true })).toBeVisible();

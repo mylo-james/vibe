@@ -71,6 +71,38 @@ after(async () => {
   }
   await sequelize.close();
 });
+test('playlist covers follow first membership order, update on removal and remain private', async () => {
+  const path = `/users/${alice.data.user.userId}/playlists`;
+  const summary = async () =>
+    (await request(path, { cookie: alice.cookie })).data.playlistNames.find(
+      (p) => p.playlistId === playlistId,
+    );
+  assert.equal((await summary()).firstSong, null);
+  const songs = await Song.findAll({ order: [['id', 'DESC']], limit: 2 });
+  for (const song of songs)
+    assert.equal(
+      (
+        await request(`/playlists/${playlistId}/songs`, {
+          cookie: alice.cookie,
+          method: 'POST',
+          body: { songId: song.id },
+        })
+      ).status,
+      201,
+    );
+  assert.equal((await summary()).firstSong.songId, songs[0].id);
+  assert.equal((await summary()).firstSong.songName, songs[0].songName);
+  const searched = await request('/search?searchInput=Alice', { cookie: alice.cookie });
+  assert.equal(searched.data.playlistNames[0].firstSong.songId, songs[0].id);
+  assert.equal((await request(path, { cookie: bob.cookie })).status, 403);
+  for (const [index, song] of songs.entries()) {
+    await request(`/playlists/${playlistId}/songs/${song.id}`, {
+      cookie: alice.cookie,
+      method: 'DELETE',
+    });
+    assert.equal((await summary()).firstSong?.songId || null, songs[index + 1]?.id || null);
+  }
+});
 test('login and session restore the actual account in an HttpOnly cookie', async () => {
   const login = await request('/login', { method: 'POST', body: credentials('alice') });
   assert.equal(login.status, 200);

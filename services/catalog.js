@@ -1,5 +1,14 @@
-const { Album, Artist } = require('../db/models');
+const { Album, Artist, PlaylistSong, Song } = require('../db/models');
 const songInclude = [{ model: Album, include: [{ model: Artist }] }, { model: Artist }];
+const playlistInclude = [
+  {
+    model: PlaylistSong,
+    separate: true,
+    limit: 1,
+    order: [['id', 'ASC']],
+    include: [{ model: Song, include: songInclude }],
+  },
+];
 const serializeSong = (song) =>
   song.source === 'audius'
     ? {
@@ -32,5 +41,6 @@ const playlistSummary = (p) => ({
   playList: p.playlistName,
   userId: p.userId,
   savedAt: p.createdAt,
+  firstSong: p.PlaylistSongs?.[0]?.Song ? serializeSong(p.PlaylistSongs[0].Song) : null,
 });
-module.exports = { songInclude, serializeSong, serializeAlbum, playlistSummary };
+module.exports = { songInclude, playlistInclude, serializeSong, serializeAlbum, playlistSummary };

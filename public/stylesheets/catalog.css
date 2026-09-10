@@ -261,6 +261,14 @@
   gap: 0.15rem;
   flex-wrap: wrap;
 }
+.track-actions .playlist-action {
+  width: 44px;
+  min-width: 44px;
+  padding-inline: 0;
+  font-size: 1.5rem;
+  line-height: 1;
+  text-decoration: none;
+}
 .track-actions button[aria-pressed='true'] {
   color: var(--accent);
 }
@@ -474,7 +482,7 @@
   .track-row .track-actions {
     gap: 0;
   }
-  .track-row .track-actions button {
+  .track-row .track-actions button:not(.playlist-action) {
     padding: 0.4rem;
     font-size: 0.7rem;
   }

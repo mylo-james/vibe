@@ -3,14 +3,16 @@
   background: #1c1f19;
 }
 .library-view .section-heading {
-  border-left: 4px solid var(--accent);
-  padding-left: 1.25rem;
+  margin-bottom: var(--space-1);
+}
+.library-view .section-heading h1 {
+  margin-bottom: 0;
 }
 .library-tabs {
   display: flex;
   gap: 2rem;
   border-bottom: 1px solid var(--line);
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--space-2);
 }
 .library-tabs a {
   display: block;
@@ -28,9 +30,19 @@
   align-items: center;
   justify-content: flex-end;
   gap: 0.75rem;
+  flex-wrap: wrap;
   margin-bottom: 1rem;
   font-size: 0.8rem;
   color: var(--muted);
+}
+.library-tools > .button {
+  margin-right: auto;
+}
+.library-sort {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
 }
 .library-tools select {
   background: var(--surface);
@@ -45,11 +57,39 @@
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
 }
 .library-view .playlist-list {
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-2);
 }
-.library-view .playlist-tile {
-  border-left: 3px solid var(--accent);
-  border-radius: 0;
+.playlist-cover {
+  flex: 0 0 auto;
+}
+.playlist-record {
+  display: grid;
+  place-items: center;
+  position: relative;
+  width: 76%;
+  aspect-ratio: 1;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface-low);
+  color: var(--accent-ink);
+  font: 700 1.1rem var(--font-body);
+  isolation: isolate;
+}
+.playlist-record::before {
+  content: '';
+  position: absolute;
+  inset: 26%;
+  border-radius: 50%;
+  background: var(--accent);
+  z-index: -1;
+}
+.playlist-cover[data-style='Chill'] .playlist-record::before {
+  background: var(--muted);
+}
+.playlist-cover[data-style='Electronic'] .playlist-record::before {
+  background: var(--ink);
 }
 .library-view .empty-state {
   padding: 2rem 0;
@@ -59,10 +99,28 @@
     gap: 1.5rem;
     font-size: 0.85rem;
   }
-  .library-view .section-heading {
-    padding-left: 0.8rem;
-  }
   .library-view .album-shelf {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .library-view .playlist-list {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-2);
+  }
+  .playlist-tile .playlist-cover {
+    width: 64px;
+  }
+  .playlist-record {
+    font-size: 0.85rem;
+  }
+  .library-tools > .button {
+    padding-inline: var(--space-2);
+  }
+  .library-sort label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 }

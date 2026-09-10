@@ -117,22 +117,24 @@
 .playlist-tile {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  background: var(--surface-raised);
-  border-radius: 0.65rem;
-  padding: 1.3rem;
+  gap: var(--space-1);
+  min-width: 0;
   text-decoration: none;
   font-size: 1.05rem;
   font-weight: 700;
   overflow-wrap: anywhere;
 }
 .playlist-tile:hover {
-  background: var(--line);
+  color: var(--accent);
+}
+.playlist-copy {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
 }
 .playlist-kind {
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   color: var(--muted);
-  letter-spacing: 0.07em;
   font-weight: 400;
 }
 
@@ -403,10 +405,7 @@ dialog::backdrop {
   .playlist-tile {
     flex-direction: row;
     align-items: center;
-    padding: 1rem;
-  }
-  .playlist-kind {
-    display: none;
+    gap: var(--space-2);
   }
 
   .player {

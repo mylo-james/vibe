@@ -22,8 +22,6 @@ block content
         a(href='/music/library' data-nav='library') Library
       .sidebar-heading
         h2= publicDemo ? 'Temporary playlists' : 'Your playlists'
-        button.icon-button#newPlaylistButton(type='button' aria-label='Create playlist')
-          +icon('plus')
       nav.playlist-nav#sidebarPlaylists(aria-label='Your playlists')
       a.credits-link(href='/credits' target='_blank' rel='noopener') Music credits
     main.music-content#mainContent(tabindex='-1')

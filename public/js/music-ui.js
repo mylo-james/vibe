@@ -24,6 +24,19 @@ export function artwork(item, className = '') {
   } else frame.textContent = 'V';
   return frame;
 }
+export function playlistArtwork(song) {
+  const frame = artwork(song, 'playlist-cover');
+  frame.setAttribute('aria-hidden', 'true');
+  frame.dataset.style = song?.style || '';
+  const fallback = () => {
+    const record = element('span', song?.style === 'Chiptune' ? '8' : 'V', 'playlist-record');
+    frame.replaceChildren(record);
+  };
+  const image = frame.querySelector('img');
+  if (image) image.addEventListener('error', fallback, { once: true });
+  else fallback();
+  return frame;
+}
 export function externalLink(label, href) {
   const link = element('a', label);
   link.href = href;

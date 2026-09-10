@@ -23,7 +23,7 @@ async function provider(page) {
       duration: 120,
       style: index % 2 === 0 ? 'Electronic' : 'Rock',
       mood: index % 3 === 0 ? 'Peaceful' : 'Upbeat',
-      artwork: '/public/images/favicon.ico',
+      artwork: '/public/images/favicon.ico?track=' + ref.songId,
       sourceUrl: 'https://audius.co/artist/track',
       license: 'Audius Open Music License',
       licenseUrl: 'https://audius.org/open-music-license.pdf',
@@ -289,7 +289,8 @@ for (const width of [390, 768, 1440])
     await page.getByRole('link', { name: 'Explore album', exact: true }).click();
     await fit(page);
     await page.getByRole('link', { name: 'Library', exact: true }).click();
-    await page.getByRole('button', { name: 'Create playlist', exact: true }).last().click();
+    await page.getByRole('link', { name: /^Playlists \d+$/, exact: true }).click();
+    await page.getByRole('button', { name: 'Create playlist', exact: true }).click();
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog')).not.toBeVisible();
     await fit(page);
@@ -499,7 +500,8 @@ test('a fresh demo can play saved songs, albums and populated playlists without 
   await expect(page.getByRole('link', { name: 'Albums 6', exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Playlists 6', exact: true })).toBeVisible();
   await expect(page.locator('.track-row')).toHaveCount(34);
-  await page.getByRole('button', { name: 'Play saved songs', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Play saved songs', exact: true })).toHaveCount(0);
+  await page.locator('.track-play').first().click();
   await expect
     .poll(() => page.locator('audio').evaluate((audio) => audio.currentTime))
     .toBeGreaterThan(0);
@@ -517,4 +519,85 @@ test('a fresh demo can play saved songs, albums and populated playlists without 
   await page.getByRole('button', { name: 'Pause', exact: true }).click();
   await expect(page.locator('audio')).toHaveJSProperty('paused', true);
   await fit(page);
+});
+
+test('Library scopes creation to Playlists and derives covers from the current first song', async ({
+  page,
+}, info) => {
+  await provider(page);
+  await demo(page);
+  await settled(page);
+  await expect(page.getByRole('button', { name: 'Create playlist', exact: true })).toHaveCount(0);
+  await page.getByRole('link', { name: 'Library', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Create playlist', exact: true })).toHaveCount(0);
+  await page.getByRole('link', { name: 'Albums 6', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Create playlist', exact: true })).toHaveCount(0);
+  await page.getByRole('link', { name: 'Playlists 6', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Create playlist', exact: true })).toHaveCount(1);
+  const { user } = await (await page.request.get('/api/session')).json();
+  const { playlistNames } = await (
+    await page.request.get(`/api/users/${user.userId}/playlists`)
+  ).json();
+  for (const p of playlistNames) {
+    const tile = page
+      .locator('.playlist-list')
+      .getByRole('link', { name: p.playList, exact: true });
+    if (p.firstSong.source === 'audius')
+      await expect(tile.locator('img')).toHaveAttribute(
+        'src',
+        '/public/images/favicon.ico?track=' + p.firstSong.songId,
+      );
+    else await expect(tile.locator('.playlist-record')).toBeVisible();
+  }
+  for (const width of [390, 320, 768, 1440]) {
+    await page.setViewportSize({ width, height: 844 });
+    await fit(page);
+    const placement = await page.evaluate(() => ({
+      tabs: document.querySelector('.library-tabs').getBoundingClientRect().bottom,
+      create: document.querySelector('.library-tools button').getBoundingClientRect().top,
+      first: document.querySelector('.playlist-tile').getBoundingClientRect().top,
+      bottom: document.querySelector('.player').getBoundingClientRect().top,
+    }));
+    expect(placement.create).toBeGreaterThanOrEqual(placement.tabs);
+    expect(placement.first).toBeLessThan(placement.bottom);
+    if (width === 390 || width === 1440) {
+      expect(
+        (await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze())
+          .violations,
+      ).toEqual([]);
+      await page.screenshot({ path: info.outputPath(`playlists-${width}.png`) });
+    }
+  }
+  const selected = playlistNames.find((p) => p.firstSong.source === 'audius');
+  const tile = () =>
+    page.locator('.playlist-list').getByRole('link', { name: selected.playList, exact: true });
+  await tile().click();
+  const rows = page.locator('.track-row');
+  const nextId = await rows.nth(1).getAttribute('data-song-id');
+  await rows
+    .first()
+    .getByRole('button', { name: / from playlist$/ })
+    .click();
+  await page.getByRole('link', { name: 'Library', exact: true }).click();
+  await page.getByRole('link', { name: 'Playlists 6', exact: true }).click();
+  await expect(tile().locator('img')).toHaveAttribute(
+    'src',
+    '/public/images/favicon.ico?track=' + nextId,
+  );
+  // An image failure keeps a usable decorative cover without changing its playlist link.
+  await tile()
+    .locator('img')
+    .evaluate((img) => img.dispatchEvent(new Event('error')));
+  await expect(tile().locator('.playlist-record')).toBeVisible();
+  await page.getByRole('button', { name: 'Create playlist', exact: true }).click();
+  await page.getByLabel('Playlist name', { exact: true }).fill('A new empty mix');
+  await page.getByRole('button', { name: 'Save playlist', exact: true }).click();
+  await page.getByRole('link', { name: 'Library', exact: true }).click();
+  await page.getByRole('link', { name: 'Playlists 7', exact: true }).click();
+  await expect(
+    page
+      .locator('.playlist-list')
+      .getByRole('link', { name: 'A new empty mix', exact: true })
+      .locator('.playlist-record'),
+  ).toBeVisible();
 });
