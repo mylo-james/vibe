@@ -1,9 +1,10 @@
 const router = require('express').Router();
 const { body } = require('express-validator');
 const { requireAuth } = require('../../auth');
-const { Playlist, PlaylistSong, Song } = require('../../db/models');
+const { Playlist, PlaylistSong, Song, sequelize } = require('../../db/models');
 const { asyncHandler, httpError, positiveId, handleValidationErrors } = require('../../utils');
 const { songInclude, serializeSong, playlistSummary } = require('../../services/catalog');
+const { createPlaylist } = require('../../services/demo-policy');
 router.use(requireAuth);
 router.param('id', (req, res, next, value) => {
   try {
@@ -40,10 +41,7 @@ router.post(
     .withMessage('Use a playlist name between 1 and 50 characters.'),
   handleValidationErrors,
   asyncHandler(async (req, res) => {
-    const playlist = await Playlist.create({
-      playlistName: req.body.playlistName,
-      userId: req.user.id,
-    });
+    const playlist = await createPlaylist({ Playlist, sequelize }, req.user, req.body.playlistName);
     res.status(201).json({ playlistId: playlist.id, playlist: playlist.playlistName });
   }),
 );

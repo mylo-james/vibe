@@ -1,20 +1,18 @@
 const router = require('express').Router();
 const bcrypt = require('bcryptjs');
-const { randomBytes } = require('node:crypto');
 const { body } = require('express-validator');
 const { rateLimit } = require('express-rate-limit');
-const {
-  User,
-  Playlist,
-  PlaylistSong,
-  Song,
-  SavedSong,
-  SavedAlbum,
-  sequelize,
-  Sequelize,
-} = require('../../db/models');
+const models = require('../../db/models');
+const { User } = models;
 const { asyncHandler, httpError, handleValidationErrors } = require('../../utils');
 const { requireAuth, setSession, clearSession } = require('../../auth');
+const { publicDemoEnabled } = require('../../config/public-demo');
+const {
+  CRON_PATH,
+  admitDemo,
+  cleanupPublicDemos,
+  cronAuthorized,
+} = require('../../services/demo-policy');
 const authLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 40,
@@ -38,6 +36,11 @@ const publicUser = (user) => ({
   username: user.demoExpiresAt ? 'Demo listener' : user.userName,
   demo: Boolean(user.demoExpiresAt),
 });
+const rejectDurableAuth = (req, res, next) => {
+  if (publicDemoEnabled())
+    throw httpError(404, 'This public preview starts a temporary demo only.');
+  next();
+};
 router.get('/session', requireAuth, (req, res) => res.json({ user: publicUser(req.user) }));
 router.post('/logout', (req, res) => {
   clearSession(req, res);
@@ -45,6 +48,7 @@ router.post('/logout', (req, res) => {
 });
 router.post(
   '/login',
+  rejectDurableAuth,
   authLimit,
   email,
   body('password').isString().isLength({ min: 1, max: 200 }).withMessage('Enter your password.'),
@@ -62,6 +66,7 @@ router.post(
 );
 router.post(
   '/sign-up',
+  rejectDurableAuth,
   authLimit,
   email,
   body('confirmEmail')
@@ -101,64 +106,16 @@ router.post(
   '/demo',
   authLimit,
   asyncHandler(async (req, res) => {
-    const user = await sequelize.transaction(async (transaction) => {
-      // Expired demo accounts are owned disposable data; registered accounts never match.
-      const expired = await User.findAll({
-        where: { demoExpiresAt: { [Sequelize.Op.lt]: new Date() } },
-        attributes: ['id'],
-        transaction,
-      });
-      const ids = expired.map((user) => user.id);
-      if (ids.length) {
-        const playlists = await Playlist.findAll({
-          where: { userId: ids },
-          attributes: ['id'],
-          transaction,
-        });
-        await PlaylistSong.destroy({
-          where: { playlistId: playlists.map((p) => p.id) },
-          transaction,
-        });
-        await Playlist.destroy({ where: { userId: ids }, transaction });
-        await SavedSong.destroy({ where: { userId: ids }, transaction });
-        await SavedAlbum.destroy({ where: { userId: ids }, transaction });
-        await User.destroy({ where: { id: ids }, transaction });
-      }
-      const id = randomBytes(8).toString('hex');
-      const user = await User.create(
-        {
-          email: `demo-${id}@vibe.invalid`,
-          userName: `demo${id}`,
-          hashedPassword: await bcrypt.hash(randomBytes(24).toString('hex'), 10),
-          demoExpiresAt: new Date(Date.now() + 7200000),
-        },
-        { transaction },
-      );
-      const songs = await Song.findAll({
-        where: { audioPath: { [Sequelize.Op.ne]: null } },
-        order: [['id', 'ASC']],
-        transaction,
-      });
-      for (const [name, style] of [
-        ['Late-night focus', 'Chill'],
-        ['Press start', 'Chiptune'],
-        ['Electronic drift', 'Electronic'],
-      ]) {
-        const playlist = await Playlist.create(
-          { playlistName: name, userId: user.id },
-          { transaction },
-        );
-        await PlaylistSong.bulkCreate(
-          songs
-            .filter((song) => song.style === style)
-            .map((song) => ({ song: song.songName, songId: song.id, playlistId: playlist.id })),
-          { transaction },
-        );
-      }
-      return user;
-    });
+    const user = await admitDemo(models);
     setSession(req, res, user);
     res.status(201).json({ user: publicUser(user) });
+  }),
+);
+router.get(
+  CRON_PATH,
+  asyncHandler(async (req, res) => {
+    if (!cronAuthorized(req)) throw httpError(404, 'That page or item could not be found.');
+    res.json({ removed: await cleanupPublicDemos(models) });
   }),
 );
 module.exports = router;

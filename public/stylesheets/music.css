@@ -28,6 +28,11 @@
   gap: 1rem;
   font-size: 0.875rem;
 }
+.demo-session {
+  color: var(--accent);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
 .sidebar {
   grid-area: sidebar;
   display: flex;
@@ -288,6 +293,9 @@ dialog::backdrop {
     padding: 1rem 1.5rem;
   }
   #welcome {
+    display: none;
+  }
+  .demo-session {
     display: none;
   }
   .player {

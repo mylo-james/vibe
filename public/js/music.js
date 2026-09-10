@@ -281,7 +281,9 @@ function renderDiscover(params) {
   const header = heading('Discover', 'Find a sound. Make it yours.');
   const intro = element(
     'p',
-    user.demo ? 'Your private demo lasts two hours.' : `Welcome back, ${user.username}.`,
+    user.demo
+      ? 'This temporary listening space expires after two hours. Its saved playlists and music are deleted when a new demo starts or during daily cleanup.'
+      : `Welcome back, ${user.username}.`,
     'demo-note',
   );
   header.append(intro);
@@ -549,7 +551,7 @@ async function render() {
     const header = heading(
       'Your Library',
       user.demo
-        ? 'Starter playlists are sample mixes. Save songs and albums to build your Library.'
+        ? 'Starter playlists are sample mixes. Anything you save is available for this two-hour session.'
         : 'Saved by you. Ready for another listen.',
     );
     header.append(button('Create playlist', () => openPlaylist(), 'button button-quiet'));

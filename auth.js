@@ -3,6 +3,7 @@ const { jwtConfig } = require('./config');
 const { User } = require('./db/models');
 const { asyncHandler, httpError } = require('./utils');
 const { cookieIsSecure } = require('./config/hosting');
+const { publicDemoEnabled } = require('./config/public-demo');
 const cookieName = 'vibe_session';
 const cookieOptions = (req) => ({
   httpOnly: true,
@@ -39,7 +40,11 @@ const requireAuth = asyncHandler(async (req, res, next) => {
   }
   if (!/^\d+$/.test(payload.sub)) throw httpError(401, 'Please log in again.');
   req.user = await User.findByPk(Number(payload.sub));
-  if (!req.user || (req.user.demoExpiresAt && new Date(req.user.demoExpiresAt) <= new Date())) {
+  if (
+    !req.user ||
+    (req.user.demoExpiresAt && new Date(req.user.demoExpiresAt) <= new Date()) ||
+    (publicDemoEnabled() && !req.user.demoExpiresAt)
+  ) {
     clearSession(req, res);
     throw httpError(401, 'Your session expired. Please log in again.');
   }
