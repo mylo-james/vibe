@@ -47,9 +47,15 @@ operation keeps its existing account behavior when this setting is absent.
 
 Each demo lasts two hours. Admission is limited to 100 active demo visitors and
 40 new demos in a rolling 15-minute window across all instances. Each visitor
-can have 20 playlists total, including the three starting playlists. PostgreSQL
+can have 20 playlists total, including the six starting playlists. PostgreSQL
 transaction-scoped advisory locks make admission and playlist caps atomic across
 function instances. Lock and statement timeouts bound time spent waiting.
+
+New sessions start with 34 saved songs, six saved albums and six populated mixes.
+The collection combines the existing curated Audius selections with ten local
+tracks. Demo admission creates the user's library and playlists in one transaction,
+using catalog references without calling the provider or storing remote descriptions.
+Returning to Library does not restore items the visitor has removed.
 
 Expired sessions immediately lose access. Expired demo users and their owned
 playlists, playlist memberships, saved tracks/albums and friend links are deleted

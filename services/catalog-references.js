@@ -10,8 +10,8 @@ const {
   sequelize,
 } = require('../db/models');
 const { serializeSong, serializeAlbum, songInclude } = require('./catalog');
-async function ensureReferences() {
-  await sequelize.transaction(async (transaction) => {
+async function ensureReferences(transaction) {
+  const insert = async (transaction) => {
     // IDs and Vibe's selections only. Provider descriptions stay in session memory.
     await Song.bulkCreate(
       manifest.tracks.map((sourceId) => ({ source: 'audius', sourceId })),
@@ -21,7 +21,8 @@ async function ensureReferences() {
       manifest.albums.map((sourceId) => ({ source: 'audius', sourceId })),
       { ignoreDuplicates: true, transaction },
     );
-  });
+  };
+  return transaction ? insert(transaction) : sequelize.transaction(insert);
 }
 async function catalog() {
   await ensureReferences();

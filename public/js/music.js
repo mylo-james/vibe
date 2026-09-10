@@ -59,6 +59,24 @@ function button(text, action, className = 'text-button') {
   return node;
 }
 const player = createPlayer(fail);
+const playerOptions = $('#playerOptionsButton');
+function closePlayerOptions() {
+  playerOptions.setAttribute('aria-expanded', 'false');
+}
+playerOptions.addEventListener('click', () => {
+  const opening = playerOptions.getAttribute('aria-expanded') !== 'true';
+  playerOptions.setAttribute('aria-expanded', String(opening));
+  if (opening) $('#playerOptions button:not(:disabled)')?.focus();
+});
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && playerOptions.getAttribute('aria-expanded') === 'true') {
+    closePlayerOptions();
+    playerOptions.focus();
+  }
+});
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.transport')) closePlayerOptions();
+});
 function routeLink(label, path, className) {
   const link = element('a', label, className);
   link.href = path;
@@ -278,15 +296,19 @@ function filterLink(text, value, active, params) {
 function renderDiscover(params) {
   const query = (params.get('q') || '').trim().toLowerCase(),
     filter = params.get('filter') || 'all';
-  const header = heading('Discover', 'Find a sound. Make it yours.');
-  const intro = element(
-    'p',
-    user.demo
-      ? 'This temporary listening space expires after two hours. Its saved playlists and music are deleted when a new demo starts or during daily cleanup.'
-      : `Welcome back, ${user.username}.`,
-    'demo-note',
-  );
-  header.append(intro);
+  const header = heading('Discover', 'Your next favorite starts here.');
+  header.classList.add('discover-heading');
+  if (user.demo) {
+    const note = element('details', undefined, 'discover-demo');
+    note.append(
+      element('summary', 'Your 2-hour demo'),
+      element(
+        'p',
+        'This temporary listening space expires after two hours. Its saved playlists and music are deleted when a new demo starts or during daily cleanup.',
+      ),
+    );
+    header.append(note);
+  }
   const filters = element('nav', undefined, 'filter-bar');
   filters.setAttribute('aria-label', 'Catalog filters');
   for (const [label, value] of [
@@ -392,11 +414,16 @@ function renderDiscover(params) {
     const cover = routeLink('', `/music/album/${featured.albumId}`, 'featured-art');
     cover.append(artwork(featured));
     cover.setAttribute('aria-label', `Open album ${featured.albumName}`);
+    const coverImage = cover.querySelector('img');
+    if (coverImage) {
+      coverImage.loading = 'eager';
+      coverImage.fetchPriority = 'high';
+    }
     copy.append(
-      element('p', 'Stay for the whole record.', 'feature-intro'),
       element('h2', featured.albumName),
       element('p', featured.artistName, 'feature-artist'),
     );
+    copy.append(element('p', 'One album. A whole new mood.', 'feature-intro'));
     const actions = element('div', undefined, 'actions');
     actions.append(
       routeLink('Explore album', `/music/album/${featured.albumId}`, 'button'),
@@ -410,11 +437,19 @@ function renderDiscover(params) {
     skeleton.setAttribute('aria-hidden', 'true');
     content.append(skeleton);
   }
-  // Keep the featured cover above browsing controls on the small screen too.
-  content.append(filters, tools);
   const releases = element('section', undefined, 'catalog-section');
-  releases.append(element('h2', 'Start with an album'), albumShelf(albums));
+  releases.classList.add('discover-albums');
+  const releasesHeading = element('div', undefined, 'catalog-section-heading');
+  releasesHeading.append(
+    element('h2', 'Albums to get lost in'),
+    routeLink('View all albums', '/music/discover?filter=albums', 'text-button'),
+  );
+  releases.append(releasesHeading, albumShelf(albums));
   content.append(releases);
+  const notice = content.querySelector('.catalog-notice');
+  if (notice) content.append(notice);
+  // Browsing controls follow the records on the unfiltered landing page.
+  content.append(filters, tools);
   for (const section of sections) {
     const tracks = section.trackIds
       .map((id) => all.find((s) => s.sourceId === id))
@@ -551,7 +586,7 @@ async function render() {
     const header = heading(
       'Your Library',
       user.demo
-        ? 'Starter playlists are sample mixes. Anything you save is available for this two-hour session.'
+        ? 'Songs, albums, and mixes are ready to play. Make them yours for this two-hour session.'
         : 'Saved by you. Ready for another listen.',
     );
     header.append(button('Create playlist', () => openPlaylist(), 'button button-quiet'));
@@ -670,16 +705,24 @@ async function navigate(path, { replace = false, focus = true } = {}) {
 async function loadCatalog() {
   catalogLoading = true;
   catalogError = '';
+  async function loadAvailable(tasks) {
+    const results = await Promise.allSettled(tasks);
+    for (const result of results)
+      if (result.status === 'rejected') catalogError = result.reason.message;
+  }
   try {
     const first = sections
       .flatMap((s) => s.trackIds)
       .map((id) => catalog.find((r) => r.sourceId === id))
       .filter(Boolean);
-    await cache.hydrate(first.slice(0, 25));
-    if (albums[0]) await cache.album(albums[0]);
+    await loadAvailable([cache.hydrate(first.slice(0, 25)), albums[0] && cache.album(albums[0])]);
     if (location.pathname === '/music/discover') await render();
+    // Populate the album-led landing page before loading the remaining track catalog.
+    for (let i = 1; i < albums.length; i += 2) {
+      await loadAvailable(albums.slice(i, i + 2).map((album) => cache.album(album)));
+      if (location.pathname === '/music/discover') await render();
+    }
     await cache.hydrate(catalog);
-    for (const album of albums.slice(1)) await cache.album(album);
   } catch (error) {
     catalogError = error.message;
   } finally {

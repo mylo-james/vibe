@@ -30,7 +30,7 @@ tailscale serve --bg --https=8448 http://127.0.0.1:4331
 
 Choose an unused HTTPS port if 8448 already belongs to another app. Only the loopback proxy is trusted. The session cookie becomes `Secure` when the trusted proxy reports HTTPS. Do not expose the loopback application directly to the internet.
 
-Use **Try the demo** for a fresh private workspace with three starter playlists. Demo sessions last two hours. Expired demo accounts are removed when another demo starts. Registered accounts retain their own saved songs, saved albums and playlists. Saving a song and adding it to a playlist are independent actions. There is no shared demo password.
+Use **Try the demo** for a fresh private workspace with 34 saved songs, six albums and six populated playlists. The collection includes 24 curated Audius tracks and all ten locally hosted recordings, so visitors can listen without building a collection. Demo sessions last two hours. Expired demo accounts are removed when another demo starts. Registered accounts retain their own saved songs, saved albums and playlists. Saving a song and adding it to a playlist are independent actions. There is no shared demo password.
 
 Use `npm run dev` for server restarts on source changes. Migrations and seeding are setup steps, not restart steps. A new local database is the safest way to compare this edition with the original; applying the migration to an existing database is a separate operation that needs a backup and review.
 

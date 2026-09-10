@@ -39,16 +39,20 @@ block content
           span#playerState(role='status' aria-live='polite') Ready when you are
       .playback
         .transport
-          button.icon-button#shuffleButton(type='button' aria-label='Shuffle' aria-pressed='false')
-            +icon('shuffle')
-          button.icon-button#prevButton(type='button' aria-label='Previous track' disabled)
-            +icon('previous')
+          .player-options#playerOptions
+            button.icon-button#shuffleButton(type='button' aria-label='Shuffle' aria-pressed='false')
+              +icon('shuffle')
+            button.icon-button#prevButton(type='button' aria-label='Previous track' disabled)
+              +icon('previous')
+            button.icon-button#repeatButton(type='button' aria-label='Repeat off' aria-pressed='false')
+              +icon('repeat')
           button.icon-button.play-toggle#playButton(type='button' aria-label='Play' disabled)
             +icon('play')
           button.icon-button#nextButton(type='button' aria-label='Next track' disabled)
             +icon('next')
-          button.icon-button#repeatButton(type='button' aria-label='Repeat off' aria-pressed='false')
-            +icon('repeat')
+          button.icon-button.player-options-toggle#playerOptionsButton(type='button' aria-label='More playback controls' aria-expanded='false' aria-controls='playerOptions')
+            svg.icon(viewBox='0 0 24 24' aria-hidden='true' focusable='false')
+              path(d='M6 15l6-6 6 6' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round')
         .progress-row
           time#startTime 0:00
           label.sr-only(for='progress-bar') Seek position
